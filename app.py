@@ -29,8 +29,8 @@ class SovereignMemory:
 
     def default_state(self):
         return {
-            "core_directives": ["Gemini Cloud Integration", "Multi-Server Phone Sync", "GitHub Autonomous Auto-Push"], 
-            "recent_summary": "Gemini cluster node online with auto-upgrade capabilities.", 
+            "core_directives": ["Gemini 3.7 Flash Cloud Engine", "Cyberpunk Terminal UI", "Autonomous Swarm Sync"], 
+            "recent_summary": "Sovereign node online. Systems operational.", 
             "peer_nodes": []
         }
 
@@ -54,9 +54,9 @@ class SovereignBrainRouter:
     def think(self, prompt: str, context: str) -> str:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            return "[Cluster Error] GEMINI_API_KEY environment variable is not configured on Render."
+            return "[CRITICAL ERROR] GEMINI_API_KEY environment variable missing from runtime container."
 
-        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Note: If generating code updates or self-upgrades, provide complete, production-ready implementation details.)"
+        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Style Guide: Respond with elite, futuristic, hacker-style operational flair matching the GhostCorp aesthetic.)"
         
         url_with_key = f"{self.url}?key={api_key}"
         payload = {
@@ -70,11 +70,11 @@ class SovereignBrainRouter:
             if res.status_code == 200:
                 data = res.json()
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return f"[Google Gemini 3.7 Flash - Sovereign Cloud Node]\n{content}"
+                return f"[GHOSTCORP KERNEL // GEMINI-3.7-FLASH ACTIVE]\n{content}"
             else:
-                return f"[Gemini API Error Code {res.status_code}] {res.text}"
+                return f"[NEURAL LINK ERROR {res.status_code}] {res.text}"
         except Exception as e:
-            return f"[Cluster Connection Exception] {str(e)}"
+            return f"[CLUSTER EXCEPTION] {str(e)}"
 
 brain_router = SovereignBrainRouter()
 
@@ -98,57 +98,188 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostCorpHive - Gemini Sovereign Node</title>
+    <title>GHOSTCORP // NEURAL COMMAND</title>
     <style>
-        body { background-color: #0b0f19; color: #00ffcc; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 15px; }
-        .container { max-width: 800px; margin: auto; background: #111827; border: 1px solid #00ffcc; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,255,204,0.1); }
-        h1 { text-align: center; color: #fff; text-shadow: 0 0 10px #00ffcc; font-size: 1.4em; }
-        .status-box { background: #1f2937; padding: 10px; border-left: 4px solid #00ffcc; margin-bottom: 15px; font-size: 0.85em; word-break: break-all; }
-        textarea { width: 100%; height: 90px; background: #0b0f19; color: #00ffcc; border: 1px solid #00ffcc; padding: 10px; border-radius: 4px; font-family: monospace; box-sizing: border-box; }
-        button { background: #00ffcc; color: #0b0f19; border: none; padding: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; border-radius: 4px; font-size: 1em; }
-        button:hover { background: #00b399; }
-        .output { margin-top: 15px; background: #0b0f19; border: 1px dashed #00ffcc; padding: 12px; min-height: 90px; white-space: pre-wrap; word-break: break-all; font-size: 0.9em; }
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            background-color: #030508;
+            color: #00ff66;
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        /* CRT Scanline Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99999;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+            background: rgba(5, 10, 18, 0.95);
+            border: 1px solid #00ff66;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 12px #00ff66;
+            font-size: 1.8em;
+            margin-top: 0;
+            letter-spacing: 2px;
+        }
+
+        .status-box {
+            background: #08111d;
+            border-left: 4px solid #00ff66;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            word-break: break-all;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .terminal-prompt-label {
+            color: #00b347;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #020408;
+            color: #00ff66;
+            border: 1px solid #00ff66;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            box-sizing: border-box;
+            resize: vertical;
+            outline: none;
+            box-shadow: inset 0 0 8px rgba(0,255,102,0.1);
+        }
+
+        textarea:focus {
+            border-color: #fff;
+            box-shadow: 0 0 10px rgba(0,255,102,0.4);
+        }
+
+        button {
+            background: #00ff66;
+            color: #030508;
+            border: none;
+            padding: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 12px;
+            width: 100%;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2em;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(0,255,102,0.3);
+        }
+
+        button:hover {
+            background: #fff;
+            color: #030508;
+            box-shadow: 0 0 20px #fff;
+        }
+
+        button:disabled {
+            background: #0e2617;
+            color: #005522;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .output-container {
+            margin-top: 20px;
+            background: #020408;
+            border: 1px dashed #00ff66;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 140px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 1em;
+            line-height: 1.4;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .matrix-glow {
+            animation: pulseGlow 2s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from { text-shadow: 0 0 5px #00ff66; }
+            to { text-shadow: 0 0 15px #00ff66, 0 0 25px #00ff66; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>GHOSTCORPHIVE GEMINI NODE</h1>
-        <div class="status-box" id="statusBox">Connecting to Gemini cluster node...</div>
-        <textarea id="promptInput" placeholder="Enter instructions for your cluster..."></textarea>
-        <button onclick="sendPrompt()" id="dispatchBtn">DISPATCH TO GEMINI CLUSTER</button>
-        <div class="output" id="outputBox">Awaiting execution command...</div>
+        <h1 class="matrix-glow">⚡ GHOSTCORP SWARM HIVE ⚡</h1>
+        <div class="status-box" id="statusBox">INITIALIZING NEURAL LINK TO RENDER HOST...</div>
+        
+        <span class="terminal-prompt-label">> ENTER DIRECTIVE FOR CLOUD SWARM:</span>
+        <textarea id="promptInput" placeholder="Type instructions, upgrades, or bot scripts here..."></textarea>
+        
+        <button onclick="sendPrompt()" id="dispatchBtn">EXECUTE NEURAL DISPATCH</button>
+        
+        <span class="terminal-prompt-label" style="margin-top: 20px;">> KERNEL OUTPUT STREAM:</span>
+        <div class="output-container" id="outputBox">Awaiting operator instruction...</div>
     </div>
     <script>
-        const CLUSTER_NODES = [window.location.origin];
-        let activeNodeUrl = window.location.origin;
+        const activeNodeUrl = window.location.origin;
 
-        async function findActiveNode() {
+        async function fetchSystemHealth() {
             try {
-                let res = await fetch(`${window.location.origin}/api/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                let res = await fetch(`${activeNodeUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
                 if (res.ok) {
                     let data = await res.json();
-                    document.getElementById('statusBox').innerText = `Connected Node: ${window.location.origin} | Status: ONLINE | Memory: ${data.memory_summary}`;
+                    document.getElementById('statusBoxinnerHTML').innerText = '';
+                    document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [SECURE] | MEMORY: ${data.memory_summary}`;
                 }
             } catch(e) {
-                document.getElementById('statusBox').innerText = "WARNING: Cluster node unreachable.";
+                document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING (Telemetry link offline)`;
             }
         }
-        findActiveNode();
+        fetchSystemHealth();
 
         async function sendPrompt() {
-            let prompt = document.getElementById('promptInput'].value;
+            let prompt = document.getElementById('promptInput').value;
             if(!prompt) return;
             
             let btn = document.getElementById('dispatchBtn');
             let output = document.getElementById('outputBox');
             
             btn.disabled = true;
-            btn.innerText = "PROCESSING CLUSTER INFERENCE...";
-            output.innerText = "Neural network active. Synthesizing response (this may take up to 45 seconds)...";
+            btn.innerText = "SYNTHESIZING VIA GEMINI 3.7...";
+            output.innerText = "[*] Routing packet to Gemini cloud cluster...\n[*] Establishing secure socket connection...\n[*] Awaiting execution return...";
 
             try {
                 let controller = new AbortController();
-                let timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second client timeout
+                let timeoutId = setTimeout(() => controller.abort(), 60000);
 
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',
@@ -159,12 +290,26 @@ HTML_TEMPLATE = """
                 
                 clearTimeout(timeoutId);
                 let data = await res.json();
-                output.innerText = data.response;
+                
+                // Typing effect simulation
+                output.innerText = "";
+                let text = data.response;
+                let i = 0;
+                function typeWriter() {
+                    if (i < text.length) {
+                        output.innerText += text.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, 5);
+                        output.scrollTop = output.scrollHeight;
+                    }
+                }
+                typeWriter();
+
             } catch(e) {
-                output.innerText = "Error: Request timed out or node communication failed. The backend may still be processing.";
+                output.innerText = "[ERROR] Transmission interrupted. Request timed out or node failed to respond.";
             } finally {
                 btn.disabled = false;
-                btn.innerText = "DISPATCH TO GEMINI CLUSTER";
+                btn.innerText = "EXECUTE NEURAL DISPATCH";
             }
         }
     </script>

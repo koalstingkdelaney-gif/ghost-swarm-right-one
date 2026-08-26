@@ -111,7 +111,6 @@ HTML_TEMPLATE = """
             overflow-x: hidden;
         }
 
-        /* CRT Scanline Effect */
         body::before {
             content: " ";
             display: block;
@@ -254,10 +253,9 @@ HTML_TEMPLATE = """
 
         async function fetchSystemHealth() {
             try {
-                let res = await fetch(`${activeNodeUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                let res = await fetch(`${activeNodeUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(4000) });
                 if (res.ok) {
                     let data = await res.json();
-                    document.getElementById('statusBoxinnerHTML').innerText = '';
                     document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [SECURE] | MEMORY: ${data.memory_summary}`;
                 }
             } catch(e) {
@@ -267,12 +265,13 @@ HTML_TEMPLATE = """
         fetchSystemHealth();
 
         async function sendPrompt() {
-            let prompt = document.getElementById('promptInput').value;
-            if(!prompt) return;
-            
+            let promptField = document.getElementById('promptInput');
             let btn = document.getElementById('dispatchBtn');
             let output = document.getElementById('outputBox');
             
+            if(!promptField || !promptField.value.trim()) return;
+            let promptText = promptField.value;
+
             btn.disabled = true;
             btn.innerText = "SYNTHESIZING VIA GEMINI 3.7...";
             output.innerText = "[*] Routing packet to Gemini cloud cluster...\n[*] Establishing secure socket connection...\n[*] Awaiting execution return...";
@@ -284,14 +283,13 @@ HTML_TEMPLATE = """
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({prompt: prompt}),
+                    body: JSON.stringify({prompt: promptText}),
                     signal: controller.signal
                 });
                 
                 clearTimeout(timeoutId);
                 let data = await res.json();
                 
-                // Typing effect simulation
                 output.innerText = "";
                 let text = data.response;
                 let i = 0;

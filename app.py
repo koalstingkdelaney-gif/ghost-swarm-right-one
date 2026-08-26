@@ -61,15 +61,18 @@ class SovereignBrainRouter:
         for provider in self.providers:
             api_key = os.getenv(provider["env_key"])
             if not api_key:
+                print(f"[-] Missing API key for {provider['name']}")
                 continue
             
             try:
                 if "gemini" in provider["name"].lower():
                     url_with_key = f"{provider['url']}?key={api_key}"
                     payload = {"contents": [{"parts": [{"text": full_prompt}]}]}
-                    res = requests.post(url_with_key, json=payload, timeout=6)
+                    res = requests.post(url_with_key, json=payload, timeout=8)
                     if res.status_code == 200:
                         return f"[{provider['name']} - Live Cloud Node] " + res.json()["candidates"][0]["content"]["parts"][0]["text"]
+                    else:
+                        print(f"[-] Gemini error {res.status_code}: {res.text}")
                 else:
                     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
                     payload = {
@@ -77,10 +80,13 @@ class SovereignBrainRouter:
                         "messages": [{"role": "user", "content": full_prompt}],
                         "max_tokens": 500
                     }
-                    res = requests.post(provider["url"], json=payload, headers=headers, timeout=6)
+                    res = requests.post(provider["url"], json=payload, headers=headers, timeout=8)
                     if res.status_code == 200:
                         return f"[{provider['name']} - Live Cloud Node] " + res.json()["choices"][0]["message"]["content"]
+                    else:
+                        print(f"[-] {provider['name']} error {res.status_code}: {res.text}")
             except Exception as e:
+                print(f"[-] Exception with {provider['name']}: {e}")
                 continue
                 
         return f"[Fallback Local Brain] Processed prompt without cloud inference: {prompt}"
@@ -196,7 +202,7 @@ def cluster_sync():
         memory.state = data.get("state")
         memory.save()
         return jsonify({"status": "synced"})
-    return jsonify({"status": "failed"}), 400
+    return jsonify({"status": "failed"}, 400)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)

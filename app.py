@@ -67,16 +67,27 @@ class SovereignBrainRouter:
             }]
         }
 
-        try:
-            res = requests.post(url_with_key, json=payload, timeout=50)
-            if res.status_code == 200:
-                data = res.json()
-                content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return f"[GHOSTCORP KERNEL // SELF-UPGRADE PROTOCOL ACTIVE]\n{content}"
-            else:
-                return f"[NEURAL LINK ERROR {res.status_code}] {res.text}"
-        except Exception as e:
-            return f"[CLUSTER EXCEPTION] {str(e)}"
+        # Auto-retry loop for temporary 503 high-demand spikes
+        retries = 3
+        delay = 3
+        for attempt in range(retries):
+            try:
+                res = requests.post(url_with_key, json=payload, timeout=50)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data["candidates"][0]["content"]["parts"][0]["text"]
+                    return f"[GHOSTCORP KERNEL // SELF-UPGRADE PROTOCOL ACTIVE]\n{content}"
+                elif res.status_code == 503 and attempt < retries - 1:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                else:
+                    return f"[NEURAL LINK ERROR {res.status_code}] {res.text}"
+            except Exception as e:
+                if attempt == retries - 1:
+                    return f"[CLUSTER EXCEPTION] {str(e)}"
+                time.sleep(delay)
+        return "[CLUSTER ERROR] Max retries exceeded due to upstream model congestion."
 
 brain_router = SovereignBrainRouter()
 
@@ -87,10 +98,13 @@ def broadcast_state_to_peers(state_data):
         except:
             pass
 
-def background_cluster_sync():
+def background_cluster_sync(*args):
     while True:
         time.sleep(180)
-        broadcast_state_to_peers(memory.state)
+        try:
+            broadcast_state_to_peers(memory.state)
+        except Exception:
+            pass
 
 threading.Thread(target=background_cluster_sync, daemon=True).start()
 
@@ -103,166 +117,69 @@ HTML_TEMPLATE = """
     <title>GHOSTCORP // NEURAL COMMAND</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
         body {
             background-color: #030508;
             color: #00ff66;
             font-family: 'Share Tech Mono', monospace;
-            margin: 0;
-            padding: 10px;
-            overflow-x: hidden;
+            margin: 0; padding: 10px; overflow-x: hidden;
         }
-
         body::before {
-            content: " ";
-            display: block;
-            position: fixed;
+            content: " "; display: block; position: fixed;
             top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 99999;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
+            z-index: 99999; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
-
         .container {
-            max-width: 850px;
-            margin: auto;
-            background: rgba(5, 10, 18, 0.95);
-            border: 1px solid #00ff66;
-            padding: 20px;
-            border-radius: 6px;
+            max-width: 850px; margin: auto; background: rgba(5, 10, 18, 0.95);
+            border: 1px solid #00ff66; padding: 20px; border-radius: 6px;
             box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
         }
-
-        h1 {
-            text-align: center;
-            color: #fff;
-            text-shadow: 0 0 12px #00ff66;
-            font-size: 1.8em;
-            margin-top: 0;
-            letter-spacing: 2px;
-        }
-
+        h1 { text-align: center; color: #fff; text-shadow: 0 0 12px #00ff66; font-size: 1.8em; margin-top: 0; letter-spacing: 2px; }
         .status-box {
-            background: #08111d;
-            border-left: 4px solid #00ff66;
-            padding: 12px;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-            word-break: break-all;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            background: #08111d; border-left: 4px solid #00ff66; padding: 12px;
+            margin-bottom: 15px; font-size: 0.9em; word-break: break-all;
         }
-
-        .terminal-prompt-label {
-            color: #00b347;
-            font-weight: bold;
-            margin-bottom: 5px;
-            display: block;
-        }
-
+        .terminal-prompt-label { color: #00b347; font-weight: bold; margin-bottom: 5px; display: block; }
         textarea {
-            width: 100%;
-            height: 100px;
-            background: #020408;
-            color: #00ff66;
-            border: 1px solid #00ff66;
-            padding: 12px;
-            border-radius: 4px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 1.1em;
-            box-sizing: border-box;
-            resize: vertical;
-            outline: none;
-            box-shadow: inset 0 0 8px rgba(0,255,102,0.1);
+            width: 100%; height: 100px; background: #020408; color: #00ff66;
+            border: 1px solid #00ff66; padding: 12px; border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace; font-size: 1.1em; resize: vertical; outline: none;
         }
-
-        textarea:focus {
-            border-color: #fff;
-            box-shadow: 0 0 10px rgba(0,255,102,0.4);
-        }
-
         button {
-            background: #00ff66;
-            color: #030508;
-            border: none;
-            padding: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 12px;
-            width: 100%;
-            border-radius: 4px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 1.2em;
-            letter-spacing: 1px;
-            transition: all 0.2s ease;
-            box-shadow: 0 0 15px rgba(0,255,102,0.3);
+            background: #00ff66; color: #030508; border: none; padding: 14px;
+            font-weight: bold; cursor: pointer; margin-top: 12px; width: 100%;
+            border-radius: 4px; font-family: 'Share Tech Mono', monospace; font-size: 1.2em;
         }
-
-        button:hover {
-            background: #fff;
-            color: #030508;
-            box-shadow: 0 0 20px #fff;
-        }
-
-        button:disabled {
-            background: #0e2617;
-            color: #005522;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
+        button:hover { background: #fff; box-shadow: 0 0 20px #fff; }
         .output-container {
-            margin-top: 20px;
-            background: #020408;
-            border: 1px dashed #00ff66;
-            padding: 15px;
-            border-radius: 4px;
-            min-height: 140px;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-            font-size: 1em;
-            line-height: 1.4;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
-        }
-
-        .matrix-glow {
-            animation: pulseGlow 2s infinite alternate;
-        }
-
-        @keyframes pulseGlow {
-            from { text-shadow: 0 0 5px #00ff66; }
-            to { text-shadow: 0 0 15px #00ff66, 0 0 25px #00ff66; }
+            margin-top: 20px; background: #020408; border: 1px dashed #00ff66;
+            padding: 15px; border-radius: 4px; min-height: 140px; max-height: 400px;
+            overflow-y: auto; white-space: pre-wrap; word-break: break-all; font-size: 1em;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="matrix-glow">⚡ GHOSTCORP SWARM HIVE ⚡</h1>
-        <div class="status-box" id="statusBox">INITIALIZING NEURAL LINK TO RENDER HOST...</div>
-        
+        <h1>⚡ GHOSTCORP SWARM HIVE ⚡</h1>
+        <div class="status-box" id="statusBox">INITIALIZING NEURAL LINK...</div>
         <span class="terminal-prompt-label">> ENTER DIRECTIVE FOR CLOUD SWARM:</span>
-        <textarea id="promptInput" placeholder="Type instructions, upgrades, or bot scripts here...">Self upgrade</textarea>
-        
+        <textarea id="promptInput">Self upgrade</textarea>
         <button id="dispatchBtn" type="button">EXECUTE NEURAL DISPATCH</button>
-        
         <span class="terminal-prompt-label" style="margin-top: 20px;">> KERNEL OUTPUT STREAM:</span>
         <div class="output-container" id="outputBox">Awaiting operator instruction...</div>
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const activeNodeUrl = window.location.origin;
-
             async function fetchSystemHealth() {
                 try {
-                    let res = await fetch(`${activeNodeUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(4000) });
+                    let res = await fetch(`${activeNodeUrl}/api/health`);
                     if (res.ok) {
                         let data = await res.json();
                         document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [SECURE] | MEMORY: ${data.memory_summary}`;
                     }
                 } catch(e) {
-                    document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING (Telemetry link offline)`;
+                    document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING`;
                 }
             }
             fetchSystemHealth();
@@ -271,53 +188,25 @@ HTML_TEMPLATE = """
                 let promptField = document.getElementById('promptInput');
                 let btn = document.getElementById('dispatchBtn');
                 let output = document.getElementById('outputBox');
-                
                 if(!promptField || !promptField.value.trim()) return;
-                let promptText = promptField.value;
-
+                
                 btn.disabled = true;
-                btn.innerText = "SYNTHESIZING VIA GEMINI 3.7...";
-                output.innerText = "[*] Routing packet to Gemini cloud cluster...\n[*] Establishing secure socket connection...\n[*] Awaiting execution return...";
-
+                output.innerText = "[*] Routing packet and handling upstream retry buffers...";
                 try {
-                    let controller = new AbortController();
-                    let timeoutId = setTimeout(() => controller.abort(), 60000);
-
                     let res = await fetch(`${activeNodeUrl}/api/agent`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({prompt: promptText}),
-                        signal: controller.signal
+                        body: JSON.stringify({prompt: promptField.value})
                     });
-                    
-                    clearTimeout(timeoutId);
                     let data = await res.json();
-                    
-                    output.innerText = "";
-                    let text = data.response;
-                    let i = 0;
-                    function typeWriter() {
-                        if (i < text.length) {
-                            output.innerText += text.charAt(i);
-                            i++;
-                            setTimeout(typeWriter, 5);
-                            output.scrollTop = output.scrollHeight;
-                        }
-                    }
-                    typeWriter();
-
+                    output.innerText = data.response;
                 } catch(e) {
-                    output.innerText = "[ERROR] Transmission interrupted. Request timed out or node failed to respond.";
+                    output.entries = "[ERROR] Transmission interrupted.";
                 } finally {
                     btn.disabled = false;
-                    btn.innerText = "EXECUTE NEURAL DISPATCH";
                 }
             }
-
-            const btn = document.getElementById('dispatchBtn');
-            if(btn) {
-                btn.addEventListener('click', sendPrompt);
-            }
+            document.getElementById('dispatchBtn').addEventListener('click', sendPrompt);
         });
     </script>
 </body>

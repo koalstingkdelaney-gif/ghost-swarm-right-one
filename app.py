@@ -29,8 +29,8 @@ class SovereignMemory:
 
     def default_state(self):
         return {
-            "core_directives": ["xAI Grok Integration", "Multi-Server Phone Sync"], 
-            "recent_summary": "Grok cluster node online.", 
+            "core_directives": ["Gemini Cloud Integration", "Multi-Server Phone Sync"], 
+            "recent_summary": "Gemini cluster node online.", 
             "peer_nodes": []
         }
 
@@ -49,35 +49,30 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        self.url = "https://api.x.ai/v1/chat/completions"
-        self.model = "grok-4.6"
+        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
     def think(self, prompt: str, context: str) -> str:
-        api_key = os.getenv("XAI_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            return "[Cluster Error] XAI_API_KEY environment variable is not detected by runtime."
+            return "[Cluster Error] GEMINI_API_KEY environment variable is not configured on Render."
 
         full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}"
         
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
+        url_with_key = f"{self.url}?key={api_key}"
         payload = {
-            "model": self.model,
-            "messages": [{"role": "user", "content": full_prompt}],
-            "max_tokens": 1000
+            "contents": [{
+                "parts": [{"text": full_prompt}]
+            }]
         }
 
         try:
-            res = requests.post(self.url, json=payload, headers=headers, timeout=15)
+            res = requests.post(url_with_key, json=payload, timeout=15)
             if res.status_code == 200:
                 data = res.json()
-                content = data["choices"][0]["message"]["content"]
-                return f"[xAI Grok-4.6 - Sovereign Cloud Node]\n{content}"
+                content = data["candidates"][0]["content"]["parts"][0]["text"]
+                return f"[Google Gemini Flash - Sovereign Cloud Node]\n{content}"
             else:
-                return f"[xAI API Error Code {res.status_code}] {res.text}"
+                return f"[Gemini API Error Code {res.status_code}] {res.text}"
         except Exception as e:
             return f"[Cluster Connection Exception] {str(e)}"
 
@@ -103,7 +98,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostCorpHive - Grok Sovereign Node</title>
+    <title>GhostCorpHive - Gemini Sovereign Node</title>
     <style>
         body { background-color: #0b0f19; color: #00ffcc; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 15px; }
         .container { max-width: 800px; margin: auto; background: #111827; border: 1px solid #00ffcc; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,255,204,0.1); }
@@ -117,10 +112,10 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div class="container">
-        <h1>GHOSTCORPHIVE GROK NODE</h1>
-        <div class="status-box" id="statusBox">Connecting to Grok cluster node...</div>
-        <textarea id="promptInput" placeholder="Enter instructions for Grok..."></textarea>
-        <button onclick="sendPrompt()">DISPATCH TO GROK CLUSTER</button>
+        <h1>GHOSTCORPHIVE GEMINI NODE</h1>
+        <div class="status-box" id="statusBox">Connecting to Gemini cluster node...</div>
+        <textarea id="promptInput" placeholder="Enter instructions for your cluster..."></textarea>
+        <button onclick="sendPrompt()">DISPATCH TO GEMINI CLUSTER</button>
         <div class="output" id="outputBox">Awaiting execution command...</div>
     </div>
     <script>
@@ -150,7 +145,7 @@ HTML_TEMPLATE = """
         async function sendPrompt() {
             let prompt = document.getElementById('promptInput').value;
             if(!prompt) return;
-            document.getElementById('outputBox').innerText = "Routing directly through Grok cloud cluster...";
+            document.getElementById('outputBox').innerText = "Routing directly through Google Gemini cloud cluster...";
             try {
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',

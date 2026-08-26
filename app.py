@@ -49,47 +49,37 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        self.providers = [
-            {"name": "xAI-Grok", "url": "https://api.x.ai/v1/chat/completions", "env_key": "XAI_API_KEY", "model": "grok-4.6"},
-            {"name": "Groq-Llama", "url": "https://api.groq.com/openai/v1/chat/completions", "env_key": "GROQ_API_KEY", "model": "llama-3.3-70b-versatile"},
-            {"name": "Google-Gemini-Flash", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", "env_key": "GEMINI_API_KEY"}
-        ]
+        self.url = "https://api.x.ai/v1/chat/completions"
+        self.model = "grok-4.6"
 
     def think(self, prompt: str, context: str) -> str:
-        full_prompt = f"[Cluster Context: {context}] \n\n User Directive: {prompt}"
+        api_key = os.getenv("XAI_API_KEY")
+        if not api_key:
+            return "[Cluster Error] XAI_API_KEY environment variable is not detected by runtime."
+
+        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}"
         
-        for provider in self.providers:
-            api_key = os.getenv(provider["env_key"])
-            if not api_key:
-                print(f"[-] Missing API key for {provider['name']}")
-                continue
-            
-            try:
-                if "gemini" in provider["name"].lower():
-                    url_with_key = f"{provider['url']}?key={api_key}"
-                    payload = {"contents": [{"parts": [{"text": full_prompt}]}]}
-                    res = requests.post(url_with_key, json=payload, timeout=8)
-                    if res.status_code == 200:
-                        return f"[{provider['name']} - Live Cloud Node] " + res.json()["candidates"][0]["content"]["parts"][0]["text"]
-                    else:
-                        print(f"[-] Gemini error {res.status_code}: {res.text}")
-                else:
-                    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-                    payload = {
-                        "model": provider["model"],
-                        "messages": [{"role": "user", "content": full_prompt}],
-                        "max_tokens": 500
-                    }
-                    res = requests.post(provider["url"], json=payload, headers=headers, timeout=8)
-                    if res.status_code == 200:
-                        return f"[{provider['name']} - Live Cloud Node] " + res.json()["choices"][0]["message"]["content"]
-                    else:
-                        print(f"[-] {provider['name']} error {res.status_code}: {res.text}")
-            except Exception as e:
-                print(f"[-] Exception with {provider['name']}: {e}")
-                continue
-                
-        return f"[Fallback Local Brain] Processed prompt without cloud inference: {prompt}"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": full_prompt}],
+            "max_tokens": 1000
+        }
+
+        try:
+            res = requests.post(self.url, json=payload, headers=headers, timeout=15)
+            if res.status_code == 200:
+                data = res.json()
+                content = data["choices"][0]["message"]["content"]
+                return f"[xAI Grok-4.6 - Sovereign Cloud Node]\n{content}"
+            else:
+                return f"[xAI API Error Code {res.status_code}] {res.text}"
+        except Exception as e:
+            return f"[Cluster Connection Exception] {str(e)}"
 
 brain_router = SovereignBrainRouter()
 
@@ -160,7 +150,7 @@ HTML_TEMPLATE = """
         async function sendPrompt() {
             let prompt = document.getElementById('promptInput').value;
             if(!prompt) return;
-            document.getElementById('outputBox').innerText = "Routing through Grok cluster brain...";
+            document.getElementById('outputBox').innerText = "Routing directly through Grok cloud cluster...";
             try {
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',
@@ -192,7 +182,7 @@ def agent():
     prompt = data.get("prompt", "")
     response_text = brain_router.think(prompt, memory.state["recent_summary"])
     memory.update_state(f"Processed: {prompt[:100]}...")
-    threading.Thread(target=broadcast_state_to_peers, args=(memory.state,)).start()
+    threading.Thread(target=background_cluster_sync, args=(memory.state,)).start()
     return jsonify({"status": "success", "response": response_text, "memory_state": memory.state["recent_summary"]})
 
 @app.route("/api/cluster/sync", methods=["POST"])
@@ -202,7 +192,7 @@ def cluster_sync():
         memory.state = data.get("state")
         memory.save()
         return jsonify({"status": "synced"})
-    return jsonify({"status": "failed"}, 400)
+    return jsonify({"status": "failed"}), 400
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)

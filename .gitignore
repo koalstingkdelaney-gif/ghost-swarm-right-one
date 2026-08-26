@@ -1,0 +1,9 @@
+.env
+*.save
+.bash_history
+__pycache__/
+.cache/
+.git-credentials
+.gitconfig
+.ssh/
+.termux/

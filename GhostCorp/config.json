@@ -1,0 +1,9 @@
+{
+  "ollama_url": "http://127.0.0.1:11434/api/generate",
+  "model": "llama3.2",
+  "local_network_mode": true,
+  "endpoints": {
+    "dashboard": "http://127.0.0.1:8181",
+    "hardware_bridge": "http://127.0.0.1:5000"
+  }
+}

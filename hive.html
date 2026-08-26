@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧠 AI Hive</title>
+  <style>
+    body { 
+      margin: 0; padding: 0; overflow: hidden; 
+      background: #000; color: #00ffcc; 
+      font-family: 'Courier New', monospace;
+    }
+    canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+    
+    .container {
+      position: relative; z-index: 2; height: 100vh; 
+      display: flex; flex-direction: column; padding: 20px;
+    }
+    
+    h1 {
+      text-align: center; margin: 10px 0 20px; 
+      text-shadow: 0 0 30px #00ffcc;
+      font-size: 2.2em;
+      animation: glow 3s infinite alternate;
+    }
+    
+    #chat {
+      flex: 1; overflow-y: auto; padding: 20px; 
+      background: rgba(0, 15, 25, 0.75); 
+      border: 1px solid rgba(0, 255, 204, 0.4); 
+      border-radius: 20px;
+      margin-bottom: 15px; backdrop-filter: blur(8px);
+      box-shadow: 0 0 40px rgba(0, 255, 204, 0.2);
+    }
+    
+    .message {
+      margin: 15px 0; padding: 14px; border-radius: 15px;
+      background: rgba(0, 35, 45, 0.85);
+      box-shadow: 0 0 15px rgba(0, 255, 204, 0.1);
+    }
+    .user { background: rgba(0, 70, 60, 0.9); text-align: right; }
+
+    .controls { display: flex; gap: 12px; }
+    button {
+      flex: 1; padding: 20px; font-size: 18px; 
+      background: linear-gradient(#00ffcc, #00ccaa);
+      color: #000; border: none; border-radius: 15px; 
+      font-weight: bold; box-shadow: 0 0 25px #00ffcc;
+    }
+    input {
+      margin-top: 12px; padding: 18px; width: 100%;
+      background: #001122; border: 1px solid #00ffcc;
+      color: #00ffcc; border-radius: 15px; font-size: 16px;
+    }
+    
+    @keyframes glow { from { text-shadow: 0 0 20px #00ffcc; } to { text-shadow: 0 0 45px #00ffcc; } }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  
+  <div class="container">
+    <h1>🌀 THE HIVE</h1>
+    <div id="chat"></div>
+    
+    <div class="controls">
+      <button id="voiceBtn">🎤 Hold to Speak</button>
+    </div>
+    <input type="text" id="textInput" placeholder="Or type your command here...">
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, centerX, centerY;
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      centerX = width / 2;
+      centerY = height / 3.2;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Realistic particles
+    let particles = [];
+    for (let i = 0; i < 280; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height * 0.6,
+        size: Math.random() * 2.5,
+        speed: Math.random() * 0.6 + 0.2,
+        opacity: Math.random() * 0.8 + 0.2
+      });
+    }
+
+    let time = 0;
+    let orbRadius = 95;
+
+    function draw() {
+      time += 0.018;
+      
+      // Deep space fade
+      ctx.fillStyle = 'rgba(1, 3, 15, 0.18)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Distant stars / nebula
+      ctx.fillStyle = '#aaddff';
+      particles.forEach(p => {
+        ctx.globalAlpha = p.opacity;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        p.y += p.speed;
+        if (p.y > height) p.y = 0;
+      });
+      ctx.globalAlpha = 1.0;
+
+      // Main Holographic Orb - More Realistic
+      const pulse = Math.sin(time * 2) * 6 + orbRadius;
+      
+      // Outer glow
+      const outer = ctx.createRadialGradient(centerX-8, centerY-12, pulse*0.6, centerX, centerY, pulse*1.8);
+      outer.addColorStop(0, 'rgba(0, 255, 220, 0.9)');
+      outer.addColorStop(0.5, 'rgba(0, 180, 255, 0.35)');
+      outer.addColorStop(1, 'rgba(0, 80, 180, 0)');
+      ctx.fillStyle = outer;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, pulse * 1.75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core orb with metallic/holographic feel
+      const grad = ctx.createRadialGradient(centerX-18, centerY-22, pulse*0.3, centerX+5, centerY+12, pulse*1.1);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.4, '#44ffff');
+      grad.addColorStop(0.7, '#0088aa');
+      grad.addColorStop(1, '#002233');
+      
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner bright core
+      ctx.fillStyle = '#bbffff';
+      ctx.beginPath();
+      ctx.arc(centerX-6, centerY-8, pulse * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Holographic scan rings
+      ctx.strokeStyle = 'rgba(0, 255, 240, 0.6)';
+      ctx.lineWidth = 2.5;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY + i*8, pulse*1.1, pulse*0.35, time*0.3 + i, 0, Math.PI*2);
+        ctx.stroke();
+      }
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // ==================== Chat & Voice ====================
+    const chat = document.getElementById('chat');
+    function addMessage(text, isUser) {
+      const div = document.createElement('div');
+      div.className = `message ${isUser ? 'user' : ''}`;
+      div.innerHTML = `<strong>\( {isUser ? 'YOU' : '🌀 HIVE'}</strong><br> \){text}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    addMessage("I am the Hive.<br>Speak your command. I can build apps, pull satellite data, and rewrite myself.", false);
+
+    // Voice
+    let recognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (e) => {
+        const spoken = e.results[0][0].transcript;
+        addMessage(spoken, true);
+        processCommand(spoken);
+      };
+    }
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    voiceBtn.addEventListener('mousedown', () => {
+      if (recognition) {
+        recognition.start();
+        voiceBtn.textContent = '🎤 LISTENING...';
+        voiceBtn.style.background = '#ff0088';
+      }
+    });
+
+    voiceBtn.addEventListener('mouseup', () => {
+      if (recognition) recognition.stop();
+      voiceBtn.textContent = '🎤 Hold to Speak';
+      voiceBtn.style.background = '';
+    });
+
+    // Text input
+    document.getElementById('textInput').addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        const input = document.getElementById('textInput');
+        const text = input.value.trim();
+        if (text) {
+          addMessage(text, true);
+          input.value = '';
+          processCommand(text);
+        }
+      }
+    });
+
+    function processCommand(cmd) {
+      setTimeout(() => {
+        let reply = `🛰️ Public satellite swarm connected (Shelbyville, IN region).<br><br>`;
+        
+        if (cmd.toLowerCase().match(/build|make|code|app/)) {
+          reply += "Generating complete code for your request.<br>Tell me more details about the app.";
+        } else if (cmd.toLowerCase().match(/change|modify|edit|update|improve/)) {
+          reply += "Self-modification engaged.<br>Describe exactly what you want changed in this Hive.";
+        } else {
+          reply += "Command received. What would you like me to create or modify?";
+        }
+        addMessage(reply, false);
+      }, 900);
+    }
+  </script>
+</body>
+</html>

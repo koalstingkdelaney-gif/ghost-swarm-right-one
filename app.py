@@ -49,7 +49,8 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+        # Updated to gemini-3.6-flash endpoint
+        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
 
     def think(self, prompt: str, context: str) -> str:
         api_key = os.getenv("GEMINI_API_KEY")
@@ -70,7 +71,7 @@ class SovereignBrainRouter:
             if res.status_code == 200:
                 data = res.json()
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return f"[Google Gemini Flash - Sovereign Cloud Node]\n{content}"
+                return f"[Google Gemini 3.6 Flash - Sovereign Cloud Node]\n{content}"
             else:
                 return f"[Gemini API Error Code {res.status_code}] {res.text}"
         except Exception as e:
@@ -119,33 +120,26 @@ HTML_TEMPLATE = """
         <div class="output" id="outputBox">Awaiting execution command...</div>
     </div>
     <script>
-        const CLUSTER_NODES = [
-            window.location.origin,
-            "https://ghost-swarm-node2.onrender.com",
-            "https://ghost-swarm-node3.onrender.com"
-        ];
+        const CLUSTER_NODES = [window.location.origin];
         let activeNodeUrl = window.location.origin;
 
         async function findActiveNode() {
-            for (let node of CLUSTER_NODES) {
-                try {
-                    let res = await fetch(`${node}/api/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
-                    if (res.ok) {
-                        let data = await res.json();
-                        activeNodeUrl = node;
-                        document.getElementById('statusBox').innerText = `Connected Node: ${node} | Status: ONLINE | Memory: ${data.memory_summary}`;
-                        return;
-                    }
-                } catch(e) {}
+            try {
+                let res = await fetch(`${window.location.origin}/api/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (res.ok) {
+                    let data = await res.json();
+                    document.getElementById('statusBox').innerText = `Connected Node: ${window.location.origin} | Status: ONLINE | Memory: ${data.memory_summary}`;
+                }
+            } catch(e) {
+                document.getElementById('statusBox').innerText = "WARNING: Cluster node unreachable.";
             }
-            document.getElementById('statusBox').innerText = "WARNING: All cluster nodes are currently unreachable.";
         }
         findActiveNode();
 
         async function sendPrompt() {
             let prompt = document.getElementById('promptInput').value;
             if(!prompt) return;
-            document.getElementById('outputBox').innerText = "Routing directly through Google Gemini cloud cluster...";
+            document.getElementById('outputBox').innerText = "Routing directly through Google Gemini 3.6 Flash...";
             try {
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',
@@ -177,7 +171,6 @@ def agent():
     prompt = data.get("prompt", "")
     response_text = brain_router.think(prompt, memory.state["recent_summary"])
     memory.update_state(f"Processed: {prompt[:100]}...")
-    threading.Thread(target=background_cluster_sync, args=(memory.state,)).start()
     return jsonify({"status": "success", "response": response_text, "memory_state": memory.state["recent_summary"]})
 
 @app.route("/api/cluster/sync", methods=["POST"])

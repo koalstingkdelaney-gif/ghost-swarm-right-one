@@ -49,8 +49,8 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        # Updated to gemini-3.6-flash endpoint
-        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+        # Updated to the current gemini-3.7-flash endpoint
+        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent"
 
     def think(self, prompt: str, context: str) -> str:
         api_key = os.getenv("GEMINI_API_KEY")
@@ -71,7 +71,7 @@ class SovereignBrainRouter:
             if res.status_code == 200:
                 data = res.json()
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return f"[Google Gemini 3.6 Flash - Sovereign Cloud Node]\n{content}"
+                return f"[Google Gemini 3.7 Flash - Sovereign Cloud Node]\n{content}"
             else:
                 return f"[Gemini API Error Code {res.status_code}] {res.text}"
         except Exception as e:
@@ -139,7 +139,7 @@ HTML_TEMPLATE = """
         async function sendPrompt() {
             let prompt = document.getElementById('promptInput').value;
             if(!prompt) return;
-            document.getElementById('outputBox').innerText = "Routing directly through Google Gemini 3.6 Flash...";
+            document.getElementById('outputBox').innerText = "Routing directly through Google Gemini 3.7 Flash...";
             try {
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',

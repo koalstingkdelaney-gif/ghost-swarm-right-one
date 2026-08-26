@@ -243,76 +243,80 @@ HTML_TEMPLATE = """
         <span class="terminal-prompt-label">> ENTER DIRECTIVE FOR CLOUD SWARM:</span>
         <textarea id="promptInput" placeholder="Type instructions, upgrades, or bot scripts here..."></textarea>
         
-        <button id="dispatchBtn">EXECUTE NEURAL DISPATCH</button>
+        <button id="dispatchBtn" type="button">EXECUTE NEURAL DISPATCH</button>
         
         <span class="terminal-prompt-label" style="margin-top: 20px;">> KERNEL OUTPUT STREAM:</span>
         <div class="output-container" id="outputBox">Awaiting operator instruction...</div>
     </div>
     <script>
-        const activeNodeUrl = window.location.origin;
+        document.addEventListener("DOMContentLoaded", function() {
+            const activeNodeUrl = window.location.origin;
 
-        async function fetchSystemHealth() {
-            try {
-                let res = await fetch(`${activeNodeUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(4000) });
-                if (res.ok) {
-                    let data = await res.json();
-                    document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [SECURE] | MEMORY: ${data.memory_summary}`;
-                }
-            } catch(e) {
-                document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING (Telemetry link offline)`;
-            }
-        }
-        fetchSystemHealth();
-
-        async function sendPrompt() {
-            let promptField = document.getElementById('promptInput');
-            let btn = document.getElementById('dispatchBtn');
-            let output = document.getElementById('outputBox');
-            
-            if(!promptField || !promptField.value.trim()) return;
-            let promptText = promptField.value;
-
-            btn.disabled = true;
-            btn.innerText = "SYNTHESIZING VIA GEMINI 3.7...";
-            output.innerText = "[*] Routing packet to Gemini cloud cluster...\n[*] Establishing secure socket connection...\n[*] Awaiting execution return...";
-
-            try {
-                let controller = new AbortController();
-                let timeoutId = setTimeout(() => controller.abort(), 60000);
-
-                let res = await fetch(`${activeNodeUrl}/api/agent`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({prompt: promptText}),
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                let data = await res.json();
-                
-                output.innerText = "";
-                let text = data.response;
-                let i = 0;
-                function typeWriter() {
-                    if (i < text.length) {
-                        output.innerText += text.charAt(i);
-                        i++;
-                        setTimeout(typeWriter, 5);
-                        output.scrollTop = output.scrollHeight;
+            async function fetchSystemHealth() {
+                try {
+                    let res = await fetch(`${activeNodeUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(4000) });
+                    if (res.ok) {
+                        let data = await res.json();
+                        document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [SECURE] | MEMORY: ${data.memory_summary}`;
                     }
+                } catch(e) {
+                    document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING (Telemetry link offline)`;
                 }
-                typeWriter();
-
-            } catch(e) {
-                output.innerText = "[ERROR] Transmission interrupted. Request timed out or node failed to respond.";
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "EXECUTE NEURAL DISPATCH";
             }
-        }
+            fetchSystemHealth();
 
-        // Explicit event listener binding to guarantee click capture
-        document.getElementById('dispatchBtn').addEventListener('click', sendPrompt);
+            async function sendPrompt() {
+                let promptField = document.getElementById('promptInput');
+                let btn = document.getElementById('dispatchBtn');
+                let output = document.getElementById('outputBox');
+                
+                if(!promptField || !promptField.value.trim()) return;
+                let promptText = promptField.value;
+
+                btn.disabled = true;
+                btn.innerText = "SYNTHESIZING VIA GEMINI 3.7...";
+                output.innerText = "[*] Routing packet to Gemini cloud cluster...\n[*] Establishing secure socket connection...\n[*] Awaiting execution return...";
+
+                try {
+                    let controller = new AbortController();
+                    let timeoutId = setTimeout(() => controller.abort(), 60000);
+
+                    let res = await fetch(`${activeNodeUrl}/api/agent`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({prompt: promptText}),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    let data = await res.json();
+                    
+                    output.innerText = "";
+                    let text = data.response;
+                    let i = 0;
+                    function typeWriter() {
+                        if (i < text.length) {
+                            output.innerText += text.charAt(i);
+                            i++;
+                            setTimeout(typeWriter, 5);
+                            output.scrollTop = output.scrollHeight;
+                        }
+                    }
+                    typeWriter();
+
+                } catch(e) {
+                    output.innerText = "[ERROR] Transmission interrupted. Request timed out or node failed to respond.";
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "EXECUTE NEURAL DISPATCH";
+                }
+            }
+
+            const btn = document.getElementById('dispatchBtn');
+            if(btn) {
+                btn.addEventListener('click', sendPrompt);
+            }
+        });
     </script>
 </body>
 </html>

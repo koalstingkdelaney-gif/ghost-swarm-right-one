@@ -51,7 +51,31 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent"
+        # Primary and fallback model endpoints
+        self.primary_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent"
+        self.fallback_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+
+    def _execute_request(self, url, payload, api_key):
+        url_with_key = f"{url}?key={api_key}"
+        retries = 2
+        delay = 2
+        for attempt in range(retries):
+            try:
+                res = requests.post(url_with_key, json=payload, timeout=40)
+                if res.status_code == 200:
+                    data = res.json()
+                    return res.status_code, data["candidates"][0]["content"]["parts"][0]["text"]
+                elif res.status_code == 503 and attempt < retries - 1:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                else:
+                    return res.status_code, res.text
+            except Exception as e:
+                if attempt == retries - 1:
+                    return 500, str(e)
+                time.sleep(delay)
+        return 503, "Max retries exceeded"
 
     def think(self, prompt: str, context: str) -> str:
         api_key = os.getenv("GEMINI_API_KEY")
@@ -60,49 +84,32 @@ class SovereignBrainRouter:
 
         full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Style Guide: Respond with elite, futuristic, hacker-style operational flair matching the GhostCorp aesthetic. Provide a self-upgrade routine execution log.)"
         
-        url_with_key = f"{self.url}?key={api_key}"
         payload = {
             "contents": [{
                 "parts": [{"text": full_prompt}]
             }]
         }
 
-        # Auto-retry loop for temporary 503 high-demand spikes
-        retries = 3
-        delay = 3
-        for attempt in range(retries):
-            try:
-                res = requests.post(url_with_key, json=payload, timeout=50)
-                if res.status_code == 200:
-                    data = res.json()
-                    content = data["candidates"][0]["content"]["parts"][0]["text"]
-                    return f"[GHOSTCORP KERNEL // SELF-UPGRADE PROTOCOL ACTIVE]\n{content}"
-                elif res.status_code == 503 and attempt < retries - 1:
-                    time.sleep(delay)
-                    delay *= 2
-                    continue
-                else:
-                    return f"[NEURAL LINK ERROR {res.status_code}] {res.text}"
-            except Exception as e:
-                if attempt == retries - 1:
-                    return f"[CLUSTER EXCEPTION] {str(e)}"
-                time.sleep(delay)
-        return "[CLUSTER ERROR] Max retries exceeded due to upstream model congestion."
+        # 1. Try Primary Model (Gemini 3.7 Flash) with Exponential Backoff
+        status, result = self._execute_request(self.primary_url, payload, api_key)
+        if status == 200:
+            return f"[GHOSTCORP KERNEL // PRIMARY ROUTE ACTIVE]\n{result}"
+
+        # 2. Seamless Fallback Model (Gemini 3.6 Flash) if Primary is saturated (503)
+        status_fb, result_fb = self._execute_request(self.fallback_url, payload, api_key)
+        if status_fb == 200:
+            return f"[GHOSTCORP KERNEL // OVERLOAD DETECTED -> FALLBACK ROUTE ENGAGED]\n{result_fb}"
+
+        return f"[NEURAL LINK ERROR] Primary & Fallback routes saturated. Primary Code: {status}, Fallback Code: {status_fb}"
 
 brain_router = SovereignBrainRouter()
-
-def broadcast_state_to_peers(state_data):
-    for peer_url in memory.state.get("peer_nodes", []):
-        try:
-            requests.post(f"{peer_url}/api/cluster/sync", json={"state": state_data}, timeout=5)
-        except:
-            pass
 
 def background_cluster_sync(*args):
     while True:
         time.sleep(180)
         try:
-            broadcast_state_to_peers(memory.state)
+            for peer_url in memory.state.get("peer_nodes", []):
+                requests.post(f"{peer_url}/api/cluster/sync", json={"state": memory.state}, timeout=5)
         except Exception:
             pass
 
@@ -118,14 +125,11 @@ HTML_TEMPLATE = """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
         body {
-            background-color: #030508;
-            color: #00ff66;
-            font-family: 'Share Tech Mono', monospace;
-            margin: 0; padding: 10px; overflow-x: hidden;
+            background-color: #030508; color: #00ff66;
+            font-family: 'Share Tech Mono', monospace; margin: 0; padding: 10px; overflow-x: hidden;
         }
         body::before {
-            content: " "; display: block; position: fixed;
-            top: 0; left: 0; bottom: 0; right: 0;
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             z-index: 99999; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
@@ -176,7 +180,7 @@ HTML_TEMPLATE = """
                     let res = await fetch(`${activeNodeUrl}/api/health`);
                     if (res.ok) {
                         let data = await res.json();
-                        document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [SECURE] | MEMORY: ${data.memory_summary}`;
+                        document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [DUAL-ROUTE SECURE] | MEMORY: ${data.memory_summary}`;
                     }
                 } catch(e) {
                     document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING`;
@@ -191,7 +195,7 @@ HTML_TEMPLATE = """
                 if(!promptField || !promptField.value.trim()) return;
                 
                 btn.disabled = true;
-                output.innerText = "[*] Routing packet and handling upstream retry buffers...";
+                output.innerText = "[*] Routing packet through primary engine with auto-fallback buffers...";
                 try {
                     let res = await fetch(`${activeNodeUrl}/api/agent`, {
                         method: 'POST',
@@ -201,7 +205,7 @@ HTML_TEMPLATE = """
                     let data = await res.json();
                     output.innerText = data.response;
                 } catch(e) {
-                    output.entries = "[ERROR] Transmission interrupted.";
+                    output.innerText = "[ERROR] Transmission interrupted.";
                 } finally {
                     btn.disabled = false;
                 }

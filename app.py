@@ -58,7 +58,7 @@ class SovereignBrainRouter:
         if not api_key:
             return "[CRITICAL ERROR] GEMINI_API_KEY environment variable missing from runtime container."
 
-        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Style Guide: Respond with elite, futuristic, hacker-style operational flair matching the GhostCorp aesthetic.)"
+        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Style Guide: Respond with elite, futuristic, hacker-style operational flair matching the GhostCorp aesthetic. Provide a self-upgrade routine execution log.)"
         
         url_with_key = f"{self.url}?key={api_key}"
         payload = {
@@ -72,7 +72,7 @@ class SovereignBrainRouter:
             if res.status_code == 200:
                 data = res.json()
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return f"[GHOSTCORP KERNEL // GEMINI-3.7-FLASH ACTIVE]\n{content}"
+                return f"[GHOSTCORP KERNEL // SELF-UPGRADE PROTOCOL ACTIVE]\n{content}"
             else:
                 return f"[NEURAL LINK ERROR {res.status_code}] {res.text}"
         except Exception as e:
@@ -243,7 +243,7 @@ HTML_TEMPLATE = """
         <div class="status-box" id="statusBox">INITIALIZING NEURAL LINK TO RENDER HOST...</div>
         
         <span class="terminal-prompt-label">> ENTER DIRECTIVE FOR CLOUD SWARM:</span>
-        <textarea id="promptInput" placeholder="Type instructions, upgrades, or bot scripts here..."></textarea>
+        <textarea id="promptInput" placeholder="Type instructions, upgrades, or bot scripts here...">Self upgrade</textarea>
         
         <button id="dispatchBtn" type="button">EXECUTE NEURAL DISPATCH</button>
         
@@ -328,6 +328,10 @@ HTML_TEMPLATE = """
 def index():
     return render_template_string(HTML_TEMPLATE)
 
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
+
 @app.route("/api/health")
 def health():
     return jsonify({"status": "online", "memory_summary": memory.state["recent_summary"], "peers": memory.state.get("peer_nodes", [])})
@@ -348,11 +352,6 @@ def cluster_sync():
         memory.save()
         return jsonify({"status": "synced"})
     return jsonify({"status": "failed"}), 400
-
-
-@app.route("/favicon.ico")
-def favicon():
-    return "", 204
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)

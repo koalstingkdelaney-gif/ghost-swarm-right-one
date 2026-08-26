@@ -29,8 +29,8 @@ class SovereignMemory:
 
     def default_state(self):
         return {
-            "core_directives": ["Gemini Cloud Integration", "Multi-Server Phone Sync"], 
-            "recent_summary": "Gemini cluster node online.", 
+            "core_directives": ["Gemini Cloud Integration", "Multi-Server Phone Sync", "GitHub Autonomous Auto-Push"], 
+            "recent_summary": "Gemini cluster node online with auto-upgrade capabilities.", 
             "peer_nodes": []
         }
 
@@ -56,7 +56,7 @@ class SovereignBrainRouter:
         if not api_key:
             return "[Cluster Error] GEMINI_API_KEY environment variable is not configured on Render."
 
-        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}"
+        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Note: If generating code updates or self-upgrades, provide complete, production-ready implementation details.)"
         
         url_with_key = f"{self.url}?key={api_key}"
         payload = {
@@ -66,8 +66,7 @@ class SovereignBrainRouter:
         }
 
         try:
-            # Extended timeout to 45 seconds for heavy generation tasks
-            res = requests.post(url_with_key, json=payload, timeout=45)
+            res = requests.post(url_with_key, json=payload, timeout=50)
             if res.status_code == 200:
                 data = res.json()
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -116,7 +115,7 @@ HTML_TEMPLATE = """
         <h1>GHOSTCORPHIVE GEMINI NODE</h1>
         <div class="status-box" id="statusBox">Connecting to Gemini cluster node...</div>
         <textarea id="promptInput" placeholder="Enter instructions for your cluster..."></textarea>
-        <button onclick="sendPrompt()">DISPATCH TO GEMINI CLUSTER</button>
+        <button onclick="sendPrompt()" id="dispatchBtn">DISPATCH TO GEMINI CLUSTER</button>
         <div class="output" id="outputBox">Awaiting execution command...</div>
     </div>
     <script>
@@ -137,19 +136,35 @@ HTML_TEMPLATE = """
         findActiveNode();
 
         async function sendPrompt() {
-            let prompt = document.getElementById('promptInput').value;
+            let prompt = document.getElementById('promptInput'].value;
             if(!prompt) return;
-            document.getElementById('outputBox').innerText = "Routing through Google Gemini 3.7 Flash (extended timeout)...";
+            
+            let btn = document.getElementById('dispatchBtn');
+            let output = document.getElementById('outputBox');
+            
+            btn.disabled = true;
+            btn.innerText = "PROCESSING CLUSTER INFERENCE...";
+            output.innerText = "Neural network active. Synthesizing response (this may take up to 45 seconds)...";
+
             try {
+                let controller = new AbortController();
+                let timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second client timeout
+
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({prompt: prompt})
+                    body: JSON.stringify({prompt: prompt}),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
                 let data = await res.json();
-                document.getElementById('outputBox').innerText = data.response;
+                output.innerText = data.response;
             } catch(e) {
-                document.getElementById('outputBox').innerText = "Error: Node communication failed due to timeout.";
+                output.innerText = "Error: Request timed out or node communication failed. The backend may still be processing.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "DISPATCH TO GEMINI CLUSTER";
             }
         }
     </script>

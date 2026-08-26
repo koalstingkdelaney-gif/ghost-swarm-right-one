@@ -49,7 +49,6 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        # Updated to the current gemini-3.7-flash endpoint
         self.url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent"
 
     def think(self, prompt: str, context: str) -> str:
@@ -67,7 +66,8 @@ class SovereignBrainRouter:
         }
 
         try:
-            res = requests.post(url_with_key, json=payload, timeout=15)
+            # Extended timeout to 45 seconds for heavy generation tasks
+            res = requests.post(url_with_key, json=payload, timeout=45)
             if res.status_code == 200:
                 data = res.json()
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -139,7 +139,7 @@ HTML_TEMPLATE = """
         async function sendPrompt() {
             let prompt = document.getElementById('promptInput').value;
             if(!prompt) return;
-            document.getElementById('outputBox').innerText = "Routing directly through Google Gemini 3.7 Flash...";
+            document.getElementById('outputBox').innerText = "Routing through Google Gemini 3.7 Flash (extended timeout)...";
             try {
                 let res = await fetch(`${activeNodeUrl}/api/agent`, {
                     method: 'POST',
@@ -149,7 +149,7 @@ HTML_TEMPLATE = """
                 let data = await res.json();
                 document.getElementById('outputBox').innerText = data.response;
             } catch(e) {
-                document.getElementById('outputBox').innerText = "Error: Node communication failed.";
+                document.getElementById('outputBox').innerText = "Error: Node communication failed due to timeout.";
             }
         }
     </script>

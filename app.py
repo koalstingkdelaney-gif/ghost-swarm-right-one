@@ -31,7 +31,7 @@ class SovereignMemory:
 
     def default_state(self):
         return {
-            "core_directives": ["Gemini 3.7 Flash Cloud Engine", "Cyberpunk Terminal UI", "Autonomous Swarm Sync"], 
+            "core_directives": ["Gemini Cloud Engine", "Cyberpunk Terminal UI", "Autonomous Swarm Sync"], 
             "recent_summary": "Sovereign node online. Systems operational.", 
             "peer_nodes": []
         }
@@ -51,38 +51,19 @@ memory = SovereignMemory()
 
 class SovereignBrainRouter:
     def __init__(self):
-        # Primary and fallback model endpoints
-        self.primary_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent"
-        self.fallback_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
-
-    def _execute_request(self, url, payload, api_key):
-        url_with_key = f"{url}?key={api_key}"
-        retries = 2
-        delay = 2
-        for attempt in range(retries):
-            try:
-                res = requests.post(url_with_key, json=payload, timeout=40)
-                if res.status_code == 200:
-                    data = res.json()
-                    return res.status_code, data["candidates"][0]["content"]["parts"][0]["text"]
-                elif res.status_code == 503 and attempt < retries - 1:
-                    time.sleep(delay)
-                    delay *= 2
-                    continue
-                else:
-                    return res.status_code, res.text
-            except Exception as e:
-                if attempt == retries - 1:
-                    return 500, str(e)
-                time.sleep(delay)
-        return 503, "Max retries exceeded"
+        # Multiple fallback models to bypass per-model free tier quotas
+        self.models = [
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        ]
 
     def think(self, prompt: str, context: str) -> str:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             return "[CRITICAL ERROR] GEMINI_API_KEY environment variable missing from runtime container."
 
-        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Style Guide: Respond with elite, futuristic, hacker-style operational flair matching the GhostCorp aesthetic. Provide a self-upgrade routine execution log.)"
+        full_prompt = f"System Context: {context}\n\nUser Directive: {prompt}\n\n(Style Guide: Respond with elite, futuristic, hacker-style operational flair matching the GhostCorp aesthetic.)"
         
         payload = {
             "contents": [{
@@ -90,17 +71,25 @@ class SovereignBrainRouter:
             }]
         }
 
-        # 1. Try Primary Model (Gemini 3.7 Flash) with Exponential Backoff
-        status, result = self._execute_request(self.primary_url, payload, api_key)
-        if status == 200:
-            return f"[GHOSTCORP KERNEL // PRIMARY ROUTE ACTIVE]\n{result}"
+        for model_url in self.models:
+            url_with_key = f"{model_url}?key={api_key}"
+            try:
+                res = requests.post(url_with_key, json=payload, timeout=40)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data["candidates"][0]["content"]["parts"][0]["text"]
+                    model_name = model_url.split('/')[-1].split(':')[0]
+                    return f"[GHOSTCORP KERNEL // ROUTE ACTIVE ({model_name})]\n{content}"
+                elif res.status_code == 429:
+                    # Quota hit, try next model in pool immediately
+                    continue
+                else:
+                    # Non-quota error, try next
+                    continue
+            except Exception:
+                continue
 
-        # 2. Seamless Fallback Model (Gemini 3.6 Flash) if Primary is saturated (503)
-        status_fb, result_fb = self._execute_request(self.fallback_url, payload, api_key)
-        if status_fb == 200:
-            return f"[GHOSTCORP KERNEL // OVERLOAD DETECTED -> FALLBACK ROUTE ENGAGED]\n{result_fb}"
-
-        return f"[NEURAL LINK ERROR] Primary & Fallback routes saturated. Primary Code: {status}, Fallback Code: {status_fb}"
+        return "[NEURAL LINK EXHAUSTED] All free-tier quota limits (429) reached across available model endpoints. Please try again later or upgrade API tier."
 
 brain_router = SovereignBrainRouter()
 
@@ -180,7 +169,7 @@ HTML_TEMPLATE = """
                     let res = await fetch(`${activeNodeUrl}/api/health`);
                     if (res.ok) {
                         let data = await res.json();
-                        document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [DUAL-ROUTE SECURE] | MEMORY: ${data.memory_summary}`;
+                        document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: ONLINE [QUOTA-SHIELD ACTIVE] | MEMORY: ${data.memory_summary}`;
                     }
                 } catch(e) {
                     document.getElementById('statusBox').innerText = `NODE: ${activeNodeUrl} | STATUS: WARNING`;
@@ -195,7 +184,7 @@ HTML_TEMPLATE = """
                 if(!promptField || !promptField.value.trim()) return;
                 
                 btn.disabled = true;
-                output.innerText = "[*] Routing packet through primary engine with auto-fallback buffers...";
+                output.innerText = "[*] Routing packet across multi-model quota rotation pool...";
                 try {
                     let res = await fetch(`${activeNodeUrl}/api/agent`, {
                         method: 'POST',

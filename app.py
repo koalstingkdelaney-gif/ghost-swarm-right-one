@@ -243,7 +243,7 @@ HTML_TEMPLATE = """
         <span class="terminal-prompt-label">> ENTER DIRECTIVE FOR CLOUD SWARM:</span>
         <textarea id="promptInput" placeholder="Type instructions, upgrades, or bot scripts here..."></textarea>
         
-        <button onclick="sendPrompt()" id="dispatchBtn">EXECUTE NEURAL DISPATCH</button>
+        <button id="dispatchBtn">EXECUTE NEURAL DISPATCH</button>
         
         <span class="terminal-prompt-label" style="margin-top: 20px;">> KERNEL OUTPUT STREAM:</span>
         <div class="output-container" id="outputBox">Awaiting operator instruction...</div>
@@ -310,6 +310,9 @@ HTML_TEMPLATE = """
                 btn.innerText = "EXECUTE NEURAL DISPATCH";
             }
         }
+
+        // Explicit event listener binding to guarantee click capture
+        document.getElementById('dispatchBtn').addEventListener('click', sendPrompt);
     </script>
 </body>
 </html>

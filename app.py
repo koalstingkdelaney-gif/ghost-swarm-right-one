@@ -4,11 +4,13 @@ import json
 import threading
 import requests
 from flask import Flask, jsonify, request, render_template_string
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 
 class SovereignMemory:
     def __init__(self, memory_file="GhostCorp/memory_core.json"):

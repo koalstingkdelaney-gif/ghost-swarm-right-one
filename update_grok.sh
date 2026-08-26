@@ -1,3 +1,8 @@
+#!/bin/bash
+echo "[*] Injecting xAI Grok Brain and updating configuration..."
+
+# 1. Update app.py to include xAI Grok provider
+cat << 'CODE' > app.py
 import os
 import time
 import json
@@ -200,3 +205,27 @@ def cluster_sync():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
+CODE
+
+# 2. Automatically embed your xAI API key into a local .env file
+cat << 'ENV' > .env
+XAI_API_KEY=your_xai_key_here
+ENV
+
+# 3. Ensure render.yaml forces python app.py start command
+cat << 'YAML' > render.yaml
+services:
+  - type: web
+    name: ghost-swarm-node-3
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    autoDeploy: true
+YAML
+
+# 4. Git commit and push everything to GitHub
+git add .
+git commit -m "Upgrade: Add xAI Grok router support and embed API key configuration"
+git push origin main
+
+echo "[+] Grok Cluster integration successfully pushed to GitHub!"
